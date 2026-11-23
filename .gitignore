@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+
+# Node
+node_modules/
+frontend/dist/
+
+# Datos generados (se regeneran con datos/generar_muestra.py)
+datos/muestra/
+datos/*.jsonl
+
+# Datos de Solr del contenedor
+solr_data/
