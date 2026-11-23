@@ -1,0 +1,15 @@
+services:
+  solr:
+    build: 
+      context: ./solr
+      dockerfile: Dockerfile
+    container_name: solr1
+    ports:
+      - 127.0.0.1:8983:8983
+    volumes:
+      - solr_data:/var/solr
+    command:
+      - solr-precreate
+      - insectos
+volumes:
+  solr_data: {}
