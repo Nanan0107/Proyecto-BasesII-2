@@ -165,7 +165,7 @@ POST /api/consultas/2
         facet (\cod{facet_fields}, \cod{facet_ranges}, \cod{facet_queries}, \cod{facets} de
         la JSON Facet API\ldots). \cod{solr.py} las convierte a un formato único:
 \begin{lstlisting}
-{"numFound": 16076, "docs": [...], "qtime": 3,
+{"numFound": 280284, "docs": [...], "qtime": 1,
  "facets": [{"nombre": "...", "tipo": "campo|rango|consulta|json",
              "buckets": [{"valor": "...", "conteo": 0,
                           "metricas": {}, "hijos": []}]}],
@@ -271,10 +271,18 @@ El tipo \textbf{\cod{ubicacion_rpt}} es un \cod{SpatialRecursivePrefixTreeFieldT
 
 \subsection{Indexación}
 
-\cod{solr/indexar.py} lee el archivo JSONL o CSV que produce Spark y lo envía en lotes de
-5\,000 documentos a \cod{/update}, con un \emph{commit} al final. Si el campo
-\cod{ubicacion} no viene, lo construye como \cod{"lat,lon"}. Los 100\,000 documentos de
-prueba se indexan en unos 7~s.
+Los documentos provienen del ETL de la Etapa 1 (\ruta{etl/etl_insectos.ipynb}): Spark escribe
+la carpeta \ruta{datos/limpios/insectos_asp/} con 23 fragmentos JSON Lines comprimidos
+(\cod{part-*.json.gz}, 61~MB en total), ya con los nombres de campo del esquema y la
+ubicación en formato \cod{"lat,lon"}.
+
+\cod{solr/indexar.py} recibe esa carpeta (o un archivo JSONL, JSONL.gz o CSV), lee los
+fragmentos en orden y los envía en lotes a \cod{/update}, con un \emph{commit} al final. Si
+el campo \cod{ubicacion} no viene, lo construye como \cod{"lat,lon"}:
+\begin{lstlisting}
+python solr/indexar.py datos/limpios/insectos_asp --borrar --lote 10000
+\end{lstlisting}
+Los \textbf{3\,276\,325 documentos} se indexan en unos 166~s (lotes de 10\,000).
 
 % ---------------------------------------------------------------------------
 \section{Las consultas y cómo apoyan el objetivo del proyecto}
@@ -285,8 +293,8 @@ protegidas (ASP)}. Para eso las consultas responden tres tipos de preguntas:
 \emph{¿en qué condiciones?} (elevación, época, estación).
 
 En cada tabla, \textbf{«Resultado»} es lo que devolvió Solr con los valores por defecto
-del formulario y los datos de prueba. Debajo de cada tabla están los parámetros exactos
-que la aplicación envía a Solr.
+del formulario sobre los 3\,276\,325 documentos del ETL. Debajo de cada tabla están los
+parámetros exactos que la aplicación envía a Solr.
 
 \subsection{Búsqueda y filtrado}
 
@@ -296,10 +304,10 @@ que la aplicación envía a Solr.
 \toprule
 \textbf{\#} & \textbf{Requisito} & \textbf{Pregunta que responde} & \textbf{Resultado} \\
 \midrule
-1 & Búsqueda por campos textuales o categóricos & ¿Dónde se ha registrado un taxón? ¿Qué hay registrado en un área? & 1\,204 / 2\,928 \\
-2 & Operadores AND, OR y NOT & ¿Cuántas mariposas hay en las categorías de protección más estrictas, fuera del Caribe? & 16\,076 \\
-3 & Rangos numéricos y temporales & ¿Qué se colectó en zonas de montaña durante un periodo? & 11\,968 \\
-4 & Combinación de filtros y ordenamiento por varios atributos & Registros más recientes de escarabajos en el Área de Conservación Osa & 2\,935 \\
+1 & Búsqueda por campos textuales o categóricos & ¿Dónde se ha registrado un taxón? ¿Qué hay registrado en un área? & 354 / 1\,057 \\
+2 & Operadores AND, OR y NOT & ¿Cuántas mariposas hay en las categorías de protección más estrictas, fuera del Caribe? & 280\,284 \\
+3 & Rangos numéricos y temporales & ¿Qué se colectó en zonas de montaña durante un periodo? & 349\,138 \\
+4 & Combinación de filtros y ordenamiento por varios atributos & Registros más recientes de escarabajos en el Área de Conservación Osa & 95\,997 \\
 \bottomrule
 \end{tabularx}
 \caption{Consultas de búsqueda y filtrado.}
@@ -357,12 +365,12 @@ sort=fecha_evento desc, elevacion_m asc, id asc
 \toprule
 \textbf{\#} & \textbf{Requisito} & \textbf{Pregunta que responde} & \textbf{Resultado} \\
 \midrule
-5 & Field facet & ¿Qué órdenes dominan los registros? (también por área, provincia, categoría\ldots) & Lepidoptera 29\,909, Coleoptera 25\,010, Hymenoptera 17\,997\ldots \\
-6 & Range facet & ¿Cómo se distribuyen los registros según la elevación, o según el año? & $[0, 250)$: 46\,645; $[250, 500)$: 11\,459\ldots \\
-7 & Query facets & ¿Cuántos registros hay por piso altitudinal, dentro o fuera de un ASP y por estación? & Basal 58\,104, Premontano 25\,459, Montano bajo 8\,966\ldots \\
-8 & Facets anidados & ¿Qué órdenes predominan en cada área de conservación? & ACC 16\,931 (5 órdenes)\ldots \\
-9 & Facets con funciones estadísticas & Perfil altitudinal y riqueza de especies de cada área & Volcán Poás: 2\,928 registros, de 1\,516 a 3\,655~m, promedio 2\,401~m \\
-10 & Field facet filtrado + estadísticas & ¿Cuáles son las especies más registradas en un área protegida? & Corcovado: 2\,841; \emph{Polybia occidentalis} 108, \emph{Calosoma sayi} 95\ldots \\
+5 & Field facet & ¿Qué órdenes dominan los registros? (también por área, provincia, categoría\ldots) & Coleoptera 895\,502, Lepidoptera 618\,979, No determinado 585\,203\ldots \\
+6 & Range facet & ¿Cómo se distribuyen los registros según la elevación, o según el año? & $[0, 250)$: 1\,267\,269; $[250, 500)$: 359\,236\ldots \\
+7 & Query facets & ¿Cuántos registros hay por piso altitudinal, dentro o fuera de un ASP y por estación? & Basal 1\,626\,505, Premontano 1\,222\,925, Montano bajo 362\,972; dentro de ASP 2\,064\,839\ldots \\
+8 & Facets anidados & ¿Qué órdenes predominan en cada área de conservación? & ACG 545\,831 (Coleoptera 177\,432\ldots), ACOSA 341\,302\ldots \\
+9 & Facets con funciones estadísticas & Perfil altitudinal y riqueza de especies de cada área & Guanacaste: 309\,464 registros, de 25 a 1\,600~m, promedio 780~m, 6\,918 especies \\
+10 & Field facet filtrado + estadísticas & ¿Cuáles son las especies más registradas en un área protegida? & Corcovado: 154\,017; \emph{Onthophagus acuminatus} 2\,462, \emph{Canthidium aurifex} 2\,009\ldots \\
 \bottomrule
 \end{tabularx}
 \caption{Consultas con facets.}
@@ -436,7 +444,11 @@ json.facet={"especies": {"type": "terms", "field": "especie", "limit": 10,
         misma API que se usa para las métricas de la 9 y la 10.
   \item La consulta 10 cuenta sobre \cod{especie}, así que solo incluye los registros
         identificados hasta especie. Los identificados solo hasta género o familia no
-        entran en el ranking.
+        entran en el ranking, y tampoco las morfoespecies («sp», «sp12», «cf.»), que el ETL
+        excluye del campo \cod{especie} (ver el notebook, §3.3).
+  \item En la 8 y la 9, el grupo más grande es el de los registros fuera de las ASP
+        («Sin área de conservación», «Fuera de ASP»): se dejan visibles a propósito, porque
+        sirven de referencia para comparar lo que ocurre dentro de las áreas.
 \end{itemize}
 
 \begin{figure}[H]
@@ -459,9 +471,9 @@ json.facet={"especies": {"type": "terms", "field": "especie", "limit": 10,
 \toprule
 \textbf{\#} & \textbf{Requisito} & \textbf{Pregunta que responde} & \textbf{Resultado} \\
 \midrule
-11 & Proximidad con radio del usuario (+ filtro por atributo) & ¿Qué se ha registrado cerca de un punto, como una estación biológica o un sendero? & 1\,951 (579 Lepidoptera) \\
-12 & Registros dentro de una región dibujada & ¿Qué hay en una región que no coincide con los límites administrativos, como un corredor biológico? & 2\,912 (península de Osa) \\
-13 & Polígono combinado con facets & ¿Cómo se compone la población de insectos dentro de esa región? & Lepidoptera 848, Coleoptera 747, Hymenoptera 532\ldots \\
+11 & Proximidad con radio del usuario (+ filtro por atributo) & ¿Qué se ha registrado cerca de un punto, como una estación biológica o un sendero? & 27\,720 (1\,952 Lepidoptera) \\
+12 & Registros dentro de una región dibujada & ¿Qué hay en una región que no coincide con los límites administrativos, como un corredor biológico? & 306\,653 (península de Osa) \\
+13 & Polígono combinado con facets & ¿Cómo se compone la población de insectos dentro de esa región? & Coleoptera 89\,485, Lepidoptera 59\,610, No determinado 52\,053\ldots \\
 \bottomrule
 \end{tabularx}
 \caption{Consultas geoespaciales.}
@@ -552,7 +564,7 @@ facet.field=orden                 ← solo en el modo «Polígono + facets»
     \begin{itemize}
       \item borra los puntos anteriores y dibuja \textbf{solo los documentos que devolvió
             Solr};
-      \item muestra el total \cod{numFound} («20\,757 registros dentro del polígono»),
+      \item muestra el total \cod{numFound} («98\,138 registros dentro del polígono»),
             aunque se dibuje una cantidad menor de puntos;
       \item en el modo con facets, muestra debajo el gráfico de distribución por el campo
             elegido.
@@ -641,11 +653,11 @@ a Solr.
 \textbf{Prueba} & \textbf{Resultado} \\
 \midrule
 Ejecutar las consultas 1--10 con los valores por defecto & Los totales coinciden con los de la sección 4; los gráficos se dibujan sin errores en la consola \\
-Abrir directamente en Solr la URL del panel «Consulta enviada a Solr» (consulta 2) & Mismo \cod{numFound} (16\,076) \\
-Dibujar un polígono cóncavo de 5 vértices sobre el Valle Central (modo polígono + facets) & 20\,757 registros, solo se dibujan puntos interiores, gráfico por orden \\
-Proximidad con un clic cerca de San José, radio de 15~km & 1\,971 registros dentro del círculo, tabla con los más cercanos \\
-Polígono con lados cruzados (forma de 8) & Solr lo repara (\cod{repairBuffer0}) y responde (4\,244 registros); no hay error \\
-Reiniciar el contenedor (\cod{docker compose restart}) & El índice conserva los 100\,000 documentos \\
+Abrir directamente en Solr la URL del panel «Consulta enviada a Solr» (consulta 2) & Mismo \cod{numFound} (280\,284) \\
+Dibujar un polígono cóncavo de 5 vértices sobre el Valle Central (modo polígono + facets) & 98\,138 registros, solo se dibujan puntos interiores (2\,000 como máximo), gráfico por orden \\
+Proximidad en San José (9,93; $-84{,}08$), radio de 15~km & 27\,720 registros dentro del círculo, tabla con los más cercanos \\
+Polígono con lados cruzados (forma de 8) & Solr lo repara (\cod{repairBuffer0}) y responde (2\,618 registros); no hay error \\
+Detener y volver a levantar el contenedor de Solr & El índice conserva los 3\,276\,325 documentos \\
 Ventanas de 1\,009~px y de 375~px (celular) & Sin desplazamiento horizontal de la página: las tablas anchas se desplazan dentro de su recuadro \\
 \bottomrule
 \end{tabularx}
@@ -653,15 +665,16 @@ Ventanas de 1\,009~px y de 375~px (celular) & Sin desplazamiento horizontal de l
 \end{table}
 
 % ---------------------------------------------------------------------------
-\section{Conclusiones}
+\section{Conclusiones y recomendaciones}
 
 \subsection{Conclusiones}
 
 \begin{itemize}
   \item \textbf{Solr cubre todo el análisis.} Búsqueda, filtros, cinco tipos de facets,
-        estadísticas y geometría se resuelven en el índice, con tiempos de respuesta de
-        pocos milisegundos sobre 100\,000 documentos. La aplicación solo arma la consulta y
-        presenta el resultado.
+        estadísticas y geometría se resuelven en el índice. Sobre los 3\,276\,325 documentos
+        del ETL, los filtros y las consultas geoespaciales tardan pocos milisegundos en Solr
+        y los facets más pesados (estadísticas por área, range facet por elevación) menos de
+        200~ms. La aplicación solo arma la consulta y presenta el resultado.
   \item \textbf{El campo espacial requiere configuración explícita.} Para consultar
         polígonos arbitrarios hacen falta tres cosas que no vienen por defecto: la
         librería JTS en la imagen, \cod{spatialContextFactory=JTS} y \cod{distErrPct=0}.
@@ -673,6 +686,31 @@ Ventanas de 1\,009~px y de 375~px (celular) & Sin desplazamiento horizontal de l
         facets (consulta 13). Permite delimitar una región que no coincide con los límites
         oficiales, como un corredor biológico o una cuenca, y ver de inmediato cómo se
         compone su población de insectos.
+\end{itemize}
+
+\subsection{Recomendaciones}
+
+\begin{itemize}
+  \item \textbf{Mostrar densidad en lugar de una muestra de puntos.} Con 3,3 millones de
+        documentos el mapa dibuja como máximo unos miles de puntos. Un \emph{heatmap facet} de
+        Solr (\cod{facet.heatmap} sobre el campo RPT) permitiría ver la distribución completa
+        sin transferir los documentos.
+  \item \textbf{Indexar los polígonos de las ASP.} Una segunda colección con las geometrías
+        del SINAC permitiría dibujar los límites en el mapa y usar un área protegida completa
+        como polígono de consulta, sin tener que dibujarla a mano.
+  \item \textbf{Exportar a Solr los resultados del análisis.} El ETL calcula la distancia al
+        borde del ASP y las banderas de anomalía de cada registro. Agregarlos al esquema
+        permitiría, por ejemplo, filtrar los registros sospechosos o estudiar el efecto de borde.
+  \item \textbf{Proteger Solr en un despliegue real.} Hoy el puerto 8983 solo escucha en
+        \cod{127.0.0.1}. Si la aplicación se publicara, Solr debería quedar detrás de la API,
+        con autenticación y sin acceso a \cod{/update}.
+  \item \textbf{Actualizar los datos de forma periódica.} El pipeline es reproducible de
+        punta a punta (descarga, notebook, indexación), así que puede repetirse cuando GBIF o
+        el SINAC publiquen versiones nuevas. La capa del SINAC 2023 todavía no incluye dos
+        cambios del registro 2025.
+  \item \textbf{Ampliar la capacidad si crece el volumen.} Un solo nodo responde en
+        milisegundos con 3,3 millones de documentos. Para colecciones mayores conviene
+        SolrCloud con varios \emph{shards} y más memoria para la JVM.
 \end{itemize}
 
 \end{document}

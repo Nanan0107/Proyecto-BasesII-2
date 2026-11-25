@@ -15,3 +15,15 @@ datos/*.jsonl
 
 # Datos de Solr del contenedor
 solr_data/
+
+# Datos crudos (se descargan con etl/descargar_datos.py)
+datos/crudos/
+
+# Jupyter / Spark
+.ipynb_checkpoints/
+spark-warehouse/
+metastore_db/
+derby.log
+
+# Intermedios del ETL (Parquet de trabajo, se regeneran con el notebook)
+datos/trabajo/

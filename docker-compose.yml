@@ -11,5 +11,25 @@ services:
     command:
       - solr-precreate
       - insectos
+
+  # Etapa 1: JupyterLab con PySpark + Sedona. Monta el repositorio completo en
+  # /proyecto (notebook en etl/, datos en datos/). http://localhost:8888
+  spark:
+    build:
+      context: ./etl
+      dockerfile: Dockerfile
+      args:
+        UID: ${HOST_UID:-1000}
+        GID: ${HOST_GID:-1000}
+    container_name: spark-etl
+    ports:
+      - 127.0.0.1:8888:8888
+      - 127.0.0.1:4040:4040   # Spark UI
+    volumes:
+      - ./:/proyecto
+    environment:
+      - SPARK_DRIVER_MEMORY=${SPARK_DRIVER_MEMORY:-6g}
+    profiles: ["etl"]
+
 volumes:
   solr_data: {}

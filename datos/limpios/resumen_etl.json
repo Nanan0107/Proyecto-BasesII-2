@@ -1,0 +1,40 @@
+{
+  "registros_crudos_gbif": 3276500,
+  "poligonos_asp": 173,
+  "documentos_solr": 3276325,
+  "dentro_asp": 2064839,
+  "fuera_asp": 1211486,
+  "archivos": 23,
+  "mb_total": 60.8,
+  "bitacora": [
+    {
+      "paso": "0. Datos crudos GBIF",
+      "registros": 3276500
+    },
+    {
+      "paso": "1. Sin duplicados por id",
+      "registros": 3276500
+    },
+    {
+      "paso": "2. Limpio (antes de tratar faltantes)",
+      "registros": 3276500
+    },
+    {
+      "paso": "3. Sin registros con coordenadas faltantes o inválidas",
+      "registros": 3276325
+    },
+    {
+      "paso": "4. Después de imputación",
+      "registros": 3276325
+    },
+    {
+      "paso": "5. Integrado con ASP (left join)",
+      "registros": 3276325
+    },
+    {
+      "paso": "6. Documentos para Solr",
+      "registros": 3276325
+    }
+  ],
+  "generado": "2026-11-25 23:10:58"
+}

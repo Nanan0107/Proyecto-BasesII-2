@@ -1,0 +1,11 @@
+pyspark==3.5.9
+apache-sedona==1.9.1
+shapely==2.0.6
+numpy==1.26.4
+pandas==2.2.3
+pyarrow==17.0.0
+scikit-learn==1.5.2
+matplotlib==3.9.2
+xlrd==2.0.1
+jupyterlab==4.2.5
+nbconvert==7.16.4
