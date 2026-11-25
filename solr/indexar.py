@@ -5,8 +5,12 @@ Sirve tanto para la muestra (datos/generar_muestra.py) como para el archivo
 que produzca el notebook de Spark.
 
 Uso:
+    python solr/indexar.py datos/limpios/insectos_asp --borrar      # carpeta de Spark (part-*.json.gz)
     python solr/indexar.py datos/muestra/insectos_muestra.jsonl --borrar
     python solr/indexar.py salida_spark.csv --lote 10000
+
+Acepta un archivo JSONL (opcionalmente .gz), un CSV, o una carpeta con los
+fragmentos JSON Lines que escribe Spark.
 
 --borrar elimina todos los documentos antes de cargar (recarga limpia).
 """
@@ -15,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import gzip
 import json
 import os
 import sys
@@ -31,10 +36,21 @@ NUMERICOS = {"anio": int, "mes": int, "latitud": float, "longitud": float,
 
 
 def leer_jsonl(ruta: Path) -> Iterator[dict]:
-    with ruta.open(encoding="utf-8") as fh:
+    abrir = gzip.open if ruta.suffix == ".gz" else open
+    with abrir(ruta, "rt", encoding="utf-8") as fh:
         for linea in fh:
             if linea.strip():
                 yield json.loads(linea)
+
+
+def leer_carpeta(ruta: Path) -> Iterator[dict]:
+    """Fragmentos JSON Lines escritos por Spark (part-*.json[.gz]), en orden."""
+    partes = sorted(p for p in ruta.iterdir()
+                    if p.name.startswith("part-") and p.name.endswith((".json", ".json.gz", ".jsonl", ".jsonl.gz")))
+    if not partes:
+        sys.exit(f"No hay fragmentos part-*.json[.gz] en {ruta}")
+    for parte in partes:
+        yield from leer_jsonl(parte)
 
 
 def leer_csv(ruta: Path) -> Iterator[dict]:
@@ -75,7 +91,12 @@ def main() -> None:
 
     if not args.archivo.exists():
         sys.exit(f"No existe {args.archivo}")
-    lector = leer_csv if args.archivo.suffix.lower() == ".csv" else leer_jsonl
+    if args.archivo.is_dir():
+        lector = leer_carpeta
+    elif args.archivo.suffix.lower() == ".csv":
+        lector = leer_csv
+    else:
+        lector = leer_jsonl
 
     inicio = time.time()
     total = 0
