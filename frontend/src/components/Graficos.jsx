@@ -124,7 +124,9 @@ function Anidado({ facet }) {
         <XAxis type="number" tick={ejeTexto} tickFormatter={fmt} stroke={color('var(--eje)')} />
         <YAxis type="category" dataKey="nombre" width={170} tick={ejeTexto} stroke={color('var(--eje)')} interval={0} />
         <Tooltip content={<Consejo />} cursor={{ fill: color('var(--hover)') }} />
-        <Legend wrapperStyle={{ fontSize: 12, color: 'var(--texto-2)' }} />
+        {/* El texto de la leyenda va en color de texto; la muestra de color identifica la serie */}
+        <Legend wrapperStyle={{ fontSize: 12 }}
+          formatter={(v) => <span style={{ color: 'var(--texto-2)' }}>{v}</span>} />
         {claves.map((k, i) => (
           <Bar key={k} dataKey={k} name={k} stackId="a" maxBarSize={24}
             fill={k === 'Otros' ? color('var(--otros)') : serie(i)} stroke={color('var(--superficie)')} strokeWidth={1} />
