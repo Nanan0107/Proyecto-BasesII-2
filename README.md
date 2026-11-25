@@ -25,7 +25,6 @@ backend/                API FastAPI (Python)
   tests/                Pruebas contra el Solr real
 frontend/               React + Vite + Leaflet + Recharts
 docs/aplicacion.md      Documentación de la aplicación, consultas y pruebas
-docs/guia-solr.md       Guía paso a paso de la parte de Solr
 ```
 
 ## Cómo ejecutar
