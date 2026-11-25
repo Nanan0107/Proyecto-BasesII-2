@@ -10,8 +10,9 @@ Costa Rica. Se combinan las ocurrencias de insectos de **GBIF «Insecta of Costa
 ## Estructura
 
 ```
-docker-compose.yml      Solr 9 con el core «insectos» (pendiente — Paso 1 de la guía)
+docker-compose.yml      Solr 9.7 (un nodo) con el core «insectos»
 solr/
+  Dockerfile            Imagen solr:9.7 + librería JTS (polígonos)
   crear_esquema.py      Esquema vía Schema API (incluye el campo espacial RPT + JTS)
   indexar.py            Carga JSONL/CSV a Solr por lotes
 datos/
@@ -23,6 +24,7 @@ backend/                API FastAPI (Python)
   app/consultas/        Construcción de las consultas Solr (convencionales y geoespaciales)
   tests/                Pruebas contra el Solr real
 frontend/               React + Vite + Leaflet + Recharts
+docs/aplicacion.md      Documentación de la aplicación, consultas y pruebas
 docs/guia-solr.md       Guía paso a paso de la parte de Solr
 ```
 
