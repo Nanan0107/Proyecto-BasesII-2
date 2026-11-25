@@ -20,11 +20,21 @@ Guía paso a paso: docs/guia-solr.md (Paso 4).
 
 from __future__ import annotations
 
+def igual(campo: str, valor) -> str:
+    """Condición de coincidencia exacta sobre un campo string: campo:"valor"."""
+    return f"{campo}:{comillas(str(valor).strip())}"
 
 def proximidad(lat: float, lon: float, radio_km: float, filtros: dict, filas: int) -> dict:
     """11. Registros a menos de `radio_km` del punto (lat, lon), los más cercanos
     primero, e idealmente con la distancia de cada uno en un campo "dist".
     """
+    orden = (filtros.get("orden") or "").strip()
+    fq = [igual(campo, valor) for campo, valor in filtros.items()]
+
+    return {
+        "q":"*:*",
+        "fq":fq,
+    } 
     raise NotImplementedError
 
 
